@@ -159,7 +159,7 @@ function initCards() {
     el.onclick = () => toggleDeck(idx, el);
     collection.appendChild(el);
   });
-}
+
 
 function toggleDeck(idx, el) {
   const pos = playerDeck.indexOf(idx);
