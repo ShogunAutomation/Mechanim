@@ -81,8 +81,27 @@ export class GameObject {
   }
 
   takeDamage(amount) {
-    this.health -= amount;
-    this.showDamage(amount);
+    // Handle shield absorption first
+    let damageToHealth = amount;
+    
+    if (this.shield && this.shield > 0) {
+      if (this.shield >= damageToHealth) {
+        // Shield absorbs all damage
+        this.shield -= damageToHealth;
+        this.showShieldDamage(damageToHealth);
+        return; // No health damage
+      } else {
+        // Shield absorbs partial damage
+        damageToHealth -= this.shield;
+        this.showShieldDamage(this.shield);
+        this.shield = 0;
+      }
+    }
+    
+    // Apply remaining damage to health
+    this.health -= damageToHealth;
+    this.showDamage(damageToHealth);
+    
     if (this.health <= 0) {
       this.remove = true;
       if (this.type !== "hq" && this.type !== "obelisk") {
@@ -100,6 +119,17 @@ export class GameObject {
         document.getElementById("end-screen").style.display = "flex";
       }
     }
+  }
+
+  showShieldDamage(amount) {
+    const et = document.createElement("div");
+    et.className = "effect-text shield-damage";
+    et.textContent = `-${amount}`;
+    et.style.left = `${this.x + this.w / 2}px`;
+    et.style.top = `${this.y}px`;
+    et.style.color = this.faction === "player" ? "#60f0ff" : "#ff6060"; // Shield damage color
+    document.getElementById("battlefield").appendChild(et);
+    setTimeout(() => et.remove(), 1500);
   }
 
   showDamage(amount) {
