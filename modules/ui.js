@@ -68,6 +68,7 @@ export function closeTutorial() {
 export function openDeckBuilder() {
   eMenu.style.display = "none";
   eDeckB.style.display = "flex";
+
   // Make sure cards are properly initialized
   initCards();
   loadDeck();

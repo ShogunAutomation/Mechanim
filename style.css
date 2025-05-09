@@ -267,7 +267,7 @@ canvas {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  overflow-y: auto;
+  overflow-y: auto; /* Ensure scrolling is enabled */
   min-height: 200px;
 }
 .collection-card {
@@ -352,4 +352,24 @@ canvas {
     opacity: 0;
     transform: scale(1.5);
   }
+}
+
+/* Add styles for scrollable areas in the deck builder UI */
+.scrollable-area {
+  max-height: 400px; /* Adjust height as needed */
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.scrollable-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollable-area::-webkit-scrollbar-thumb {
+  background: #4a4a8a;
+  border-radius: 4px;
+}
+
+.scrollable-area::-webkit-scrollbar-thumb:hover {
+  background: #60f0ff;
 }

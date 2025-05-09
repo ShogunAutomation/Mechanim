@@ -289,22 +289,28 @@ export class Mech extends GameObject {
         this.speed = 40;
         this.aspd = 0.5;
         break;
+      case "sniper":
+        this.health = 50;
+        this.maxHealth = 50;
+        this.damage = 40;
+        this.range = 300;
+        this.speed = 50;
+        this.aspd = 1.2;
+        break;
     }
   }
-  
+
   render() {
     const ctx = gameState.get('ctx');
     if (!ctx) {
       console.error("Canvas context is undefined");
       return;
     }
-    
+
     // Differentiate unit types visually with shapes
     if (this.type === "unit") {
-      ctx.fillStyle = this.subtype === "basic" 
-        ? (this.faction === "player" ? "#4080ff" : "#ff4040") 
-        : (this.faction === "player" ? "#204080" : "#802020");
-      
+      ctx.fillStyle = this.faction === "player" ? "#4080ff" : "#ff4040";
+
       if (this.subtype === "basic") {
         // Draw a rectangle for basic units
         ctx.fillRect(this.x, this.y, this.w, this.h);
@@ -313,17 +319,23 @@ export class Mech extends GameObject {
         ctx.beginPath();
         ctx.arc(this.x + this.w / 2, this.y + this.h / 2, this.w / 2, 0, Math.PI * 2);
         ctx.fill();
+      } else if (this.subtype === "sniper") {
+        // Draw a triangle for sniper units
+        ctx.beginPath();
+        ctx.moveTo(this.x + this.w / 2, this.y); // Top point
+        ctx.lineTo(this.x, this.y + this.h); // Bottom-left point
+        ctx.lineTo(this.x + this.w, this.y + this.h); // Bottom-right point
+        ctx.closePath();
+        ctx.fill();
       }
-    } else {
-      // Default shape for other types
-      ctx.fillStyle = this.faction === "player" ? "#4080ff" : "#ff4040";
-      ctx.fillRect(this.x, this.y, this.w, this.h);
     }
+
+    // Render health bar
     const pct = this.health / this.maxHealth;
     ctx.fillStyle = "#333";
-    ctx.fillRect(this.x, this.y + 42, this.w, 4);
+    ctx.fillRect(this.x, this.y + this.h + 2, this.w, 4);
     ctx.fillStyle = pct > 0.6 ? "#2f2" : pct > 0.3 ? "#ff2" : "#f22";
-    ctx.fillRect(this.x, this.y + 42, this.w * pct, 4);
+    ctx.fillRect(this.x, this.y + this.h + 2, this.w * pct, 4);
   }
 }
 
@@ -404,6 +416,193 @@ export class Particle {
       this.y1 + (this.y2 - this.y1) * t
     );
     ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+export class ShieldGenerator extends GameObject {
+  constructor(x, y, faction) {
+    super(x, y, 60, 60, "structure", faction);
+    this.health = this.maxHealth = 150;
+    this.range = 250;
+    this.shieldStrength = 20; // Amount of shield given to nearby units
+    this.pulseTimer = 0;
+    this.pulseCooldown = 2; // Shield pulse every 2 seconds
+  }
+  
+  update(dt) {
+    super.update(dt);
+    
+    // Shield pulse mechanic
+    this.pulseTimer += dt;
+    if (this.pulseTimer >= this.pulseCooldown) {
+      this.pulseTimer = 0;
+      this.shieldPulse();
+    }
+  }
+  
+  shieldPulse() {
+    const allies = gameState.getGameObjects().filter(
+      obj => obj.faction === this.faction && 
+             Math.hypot(obj.x - this.x, obj.y - this.y) <= this.range
+    );
+    
+    allies.forEach(ally => {
+      // Add shield effect or temporary health boost
+      if (!ally.shield) ally.shield = 0;
+      ally.shield = Math.min(ally.shield + this.shieldStrength, 50);
+      
+      // Create visual effect
+      gameState.addParticle(
+        new ShieldEffect(
+          ally.x + ally.w/2, 
+          ally.y + ally.h/2, 
+          ally.w * 1.2,
+          this.faction === "player" ? "#60f0ff" : "#ff6060"
+        )
+      );
+    });
+  }
+  
+  render() {
+    const ctx = gameState.get('ctx');
+    if (!ctx) return;
+    
+    // Draw shield generator base
+    ctx.fillStyle = this.faction === "player" ? "#4080ff" : "#ff4040";
+    ctx.beginPath();
+    ctx.arc(this.x + this.w/2, this.y + this.h/2, this.w/2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw shield dome
+    ctx.strokeStyle = this.faction === "player" ? "#60f0ff" : "#ff6060";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(this.x + this.w/2, this.y + this.h/2, this.w/2, 0, Math.PI);
+    ctx.stroke();
+    
+    // Draw health bar
+    const pct = this.health / this.maxHealth;
+    ctx.fillStyle = "#333";
+    ctx.fillRect(this.x, this.y + this.h + 2, this.w, 4);
+    ctx.fillStyle = pct > 0.6 ? "#2f2" : pct > 0.3 ? "#ff2" : "#f22";
+    ctx.fillRect(this.x, this.y + this.h + 2, this.w * pct, 4);
+  }
+}
+
+export class Turret extends Headquarters {
+  constructor(x, y, faction) {
+    super(x, y, faction);
+    this.type = "turret";
+    this.w = 50;
+    this.h = 50;
+    this.health = this.maxHealth = 200;
+    this.damage = 25;
+    this.range = 250;
+    this.aspd = 1.5;
+    // Turrets don't spawn units
+    this.spawnPoint = null;
+  }
+  
+  render() {
+    const ctx = gameState.get('ctx');
+    if (!ctx) return;
+    
+    // Draw turret base
+    ctx.fillStyle = this.faction === "player" ? "#2040a0" : "#a02020";
+    ctx.fillRect(this.x, this.y, this.w, this.h);
+    
+    // Draw turret gun
+    ctx.fillStyle = this.faction === "player" ? "#4080ff" : "#ff4040";
+    ctx.beginPath();
+    ctx.arc(this.x + this.w/2, this.y + this.h/2, this.w/4, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw barrel pointing at target if available
+    if (this.target) {
+      const angle = Math.atan2(
+        this.target.y + this.target.h/2 - (this.y + this.h/2),
+        this.target.x + this.target.w/2 - (this.x + this.w/2)
+      );
+      
+      ctx.save();
+      ctx.translate(this.x + this.w/2, this.y + this.h/2);
+      ctx.rotate(angle);
+      ctx.fillRect(0, -3, this.w/2, 6);
+      ctx.restore();
+    } else {
+      // Default position if no target
+      ctx.fillRect(this.x + this.w/2, this.y + this.h/2 - 3, this.w/2, 6);
+    }
+    
+    // Draw health bar
+    const pct = this.health / this.maxHealth;
+    ctx.fillStyle = "#333";
+    ctx.fillRect(this.x, this.y + this.h + 2, this.w, 4);
+    ctx.fillStyle = pct > 0.6 ? "#2f2" : pct > 0.3 ? "#ff2" : "#f22";
+    ctx.fillRect(this.x, this.y + this.h + 2, this.w * pct, 4);
+  }
+}
+
+export class ShieldEffect extends Particle {
+  constructor(x, y, size, color) {
+    super(x, y, x, y, color);
+    this.size = size;
+    this.maxSize = size * 1.5;
+    this.dur = 0.5;
+  }
+  
+  render() {
+    const ctx = gameState.get('ctx');
+    if (!ctx) return;
+    
+    const t = this.time / this.dur;
+    const currentSize = this.size + (this.maxSize - this.size) * t;
+    
+    ctx.globalAlpha = 1 - t;
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(this.x1, this.y1, currentSize, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+export class EMPEffect extends Particle {
+  constructor(x, y, radius) {
+    super(x, y, x, y, "#fff");
+    this.radius = radius;
+    this.maxRadius = radius * 3;
+    this.dur = 0.8;
+  }
+  
+  render() {
+    const ctx = gameState.get('ctx');
+    if (!ctx) return;
+    
+    const t = this.time / this.dur;
+    const currentRadius = this.radius + (this.maxRadius - this.radius) * t;
+    
+    // Create electric effect
+    ctx.globalAlpha = 1 - t;
+    ctx.strokeStyle = "#60f0ff";
+    ctx.lineWidth = 3;
+    
+    // Draw lightning-like circle
+    ctx.beginPath();
+    for (let i = 0; i < 20; i++) {
+      const angle = (i / 20) * Math.PI * 2;
+      const jitter = Math.random() * 10 - 5;
+      const x = this.x1 + Math.cos(angle) * (currentRadius + jitter);
+      const y = this.y1 + Math.sin(angle) * (currentRadius + jitter);
+      
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    
     ctx.globalAlpha = 1;
   }
 }

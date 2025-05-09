@@ -1,5 +1,5 @@
 import * as gameState from './gameState.js';
-import { Mech, Headquarters } from './gameObjects.js';
+import { Mech, Turret, EMPEffect, ShieldGenerator, Particle } from './gameObjects.js';
 
 // Card definitions and state
 let allCards = [];
@@ -18,7 +18,13 @@ export function initCards() {
       cost: 2,
       unit: "basic",
       desc: "Spawn a basic mech with balanced stats.",
-      icon: "🤖"
+      icon: "🤖",
+      play: () => {
+        const h = gameState.get('height');
+        const mech = new Mech(150, h - 200, "basic", "player");
+        gameState.addGameObject(mech);
+        gameState.set('playerMechs', gameState.get('playerMechs') + 1);
+      }
     },
     {
       name: "Tank Mech",
@@ -26,31 +32,141 @@ export function initCards() {
       cost: 4,
       unit: "tank",
       desc: "Spawn a heavy tank with high health and damage.",
-      icon: "🛡️"
+      icon: "🛡️",
+      play: () => {
+        const h = gameState.get('height');
+        const mech = new Mech(150, h - 200, "tank", "player");
+        gameState.addGameObject(mech);
+        gameState.set('playerMechs', gameState.get('playerMechs') + 1);
+      }
     },
     {
       name: "Heal Spell",
       type: "spell",
       cost: 3,
-      effect: (target) => {
-        target.health = Math.min(target.health + 30, target.maxHealth);
-      },
       desc: "Heal 30 HP to nearest friendly unit.",
-      icon: "✨"
+      icon: "✨",
+      play: () => {
+        const friendlies = gameState.getGameObjects().filter(
+          (o) => o.faction === "player" && o.type !== "hq"
+        );
+        if (friendlies.length > 0) {
+          friendlies.sort((a, b) => a.health - b.health);
+          const target = friendlies[0];
+          target.health = Math.min(target.health + 30, target.maxHealth);
+          
+          // Add healing visual effect
+          const healEffect = new Particle(
+            target.x + target.w/2, 
+            target.y + target.h/2,
+            target.x + target.w/2, 
+            target.y - 20,
+            "#2f2",
+            1.0
+          );
+          gameState.addParticle(healEffect);
+          
+          console.log(`Heal applied to: ${target.type} (Health: ${target.health})`);
+        }
+      }
     },
     {
       name: "Turret",
       type: "structure",
       cost: 5,
       desc: "Place a turret spawn point to defend your base.",
-      icon: "🔫"
+      icon: "🔫",
+      play: () => {
+        const h = gameState.get('height');
+        const w = gameState.get('width');
+        gameState.addGameObject(new Turret(w / 2 - 25, h - 100, "player"));
+      }
+    },
+    {
+      name: "Sniper Mech",
+      type: "unit",
+      cost: 3,
+      unit: "sniper",
+      desc: "Spawn a sniper mech with high damage but low health.",
+      icon: "🎯",
+      play: () => {
+        const h = gameState.get('height');
+        const mech = new Mech(150, h - 200, "sniper", "player");
+        gameState.addGameObject(mech);
+        gameState.set('playerMechs', gameState.get('playerMechs') + 1);
+      }
+    },
+    {
+      name: "Shield Generator",
+      type: "structure",
+      cost: 6,
+      desc: "Place a shield generator to protect nearby units.",
+      icon: "🛡️",
+      play: () => {
+        const h = gameState.get('height');
+        const w = gameState.get('width');
+        gameState.addGameObject(new ShieldGenerator(w / 2 - 30, h - 100, "player"));
+      }
+    },
+    {
+      name: "EMP Blast",
+      type: "spell",
+      cost: 4,
+      desc: "Stun all enemy units in a small radius.",
+      icon: "⚡",
+      play: () => {
+        const w = gameState.get('width');
+        const h = gameState.get('height');
+        const empCenter = { x: w / 2, y: h / 2 };
+        const empRadius = 150;
+        
+        // Add EMP visual effect
+        gameState.addParticle(new EMPEffect(empCenter.x, empCenter.y, empRadius));
+        
+        // Apply stun to enemies in range
+        const enemies = gameState.getGameObjects().filter(
+          (o) => o.faction === "enemy" && 
+                 Math.hypot(o.x + o.w/2 - empCenter.x, o.y + o.h/2 - empCenter.y) <= empRadius
+        );
+        
+        enemies.forEach(enemy => {
+          enemy.stunned = true;
+          enemy.stunnedTime = 3; // Stun for 3 seconds
+          
+          // Add a visual indicator for stunned units
+          const el = document.createElement("div");
+          el.textContent = "⚡";
+          el.style.position = "absolute";
+          el.style.left = `${enemy.x + enemy.w/2}px`;
+          el.style.top = `${enemy.y - 20}px`;
+          el.style.color = "#ffff00";
+          el.style.fontSize = "20px";
+          el.style.zIndex = "10";
+          el.style.pointerEvents = "none";
+          el.style.animation = "float-up 3s forwards";
+          document.getElementById("battlefield").appendChild(el);
+          setTimeout(() => el.remove(), 3000);
+        });
+        
+        console.log(`EMP Blast applied to ${enemies.length} enemies.`);
+      }
     }
   ];
 
   const collection = document.getElementById("card-collection");
   collection.innerHTML = ''; // Clear existing cards
 
-  allCards.forEach((card, idx) => {
+  renderCardCollection(allCards);
+}
+
+function renderCardCollection(cards) {
+  const collection = document.getElementById("card-collection");
+  const cardContainer = document.createElement("div");
+  cardContainer.id = "card-container";
+  cardContainer.className = "scrollable-area"; // Add scrollable class
+  cardContainer.innerHTML = ''; // Clear existing cards
+
+  cards.forEach((card, idx) => {
     const el = document.createElement("div");
     el.className = "collection-card";
     el.innerHTML = `
@@ -61,13 +177,12 @@ export function initCards() {
       <div class="card-desc">${card.desc}</div>
     `;
     el.onclick = () => toggleDeck(idx, el);
-    collection.appendChild(el);
+    cardContainer.appendChild(el);
   });
 
-  updateCurrentDeckDisplay();
+  collection.appendChild(cardContainer);
 }
 
-// Make sure toggleDeck is properly exported
 export function toggleDeck(idx, el) {
   if (playerDeck.length < 20) {
     playerDeck.push(idx); // Allow duplicates by simply adding the index
@@ -158,37 +273,16 @@ export function playCard(handIdx) {
   const card = allCards[idx];
   
   const playerEnergy = gameState.get('playerEnergy');
-  
   if (playerEnergy < card.cost) {
     console.log(`Not enough energy to play card: ${card.name} (Cost: ${card.cost}, Energy: ${playerEnergy})`);
     return;
   }
-  
-  // Use state manager to update energy
+
+  // Deduct energy and remove the card from the hand
   gameState.set('playerEnergy', playerEnergy - card.cost);
   playerHand.splice(handIdx, 1);
-  console.log(`Card played: ${card.name} (Type: ${card.type}, Cost: ${card.cost})`);
 
-  if (card.type === "unit") {
-    const h = gameState.get('height');
-    const m = new Mech(150, h - 200, card.unit, "player");
-    gameState.addGameObject(m);
-    gameState.set('playerMechs', gameState.get('playerMechs') + 1);
-  } else if (card.type === "spell") {
-    // Find nearest friendly
-    const friendlies = gameState.getGameObjects().filter(
-      (o) => o.faction === "player" && o.type !== "hq"
-    );
-    if (friendlies.length > 0) {
-      friendlies.sort((a, b) => a.health - b.health);
-      console.log(`Spell effect applied to: ${friendlies[0].type} (Health: ${friendlies[0].health})`);
-      card.effect(friendlies[0]);
-    }
-  } else if (card.type === "structure") {
-    const h = gameState.get('height');
-    const w = gameState.get('width');
-    // Place a turret spawn point
-    gameState.addGameObject(new Headquarters(w / 2 - 40, h - 100, "player"));
-    console.log(`Structure placed: ${card.name}`);
-  }
+  // Execute the card's play behavior
+  console.log(`Playing card: ${card.name}`);
+  card.play();
 }
