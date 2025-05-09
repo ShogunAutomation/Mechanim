@@ -76,27 +76,209 @@
 
     /* --- Deck Builder --- */
 
-    #deck-builder { padding:20px; display:flex; flex-direction:column }
+/* --- Deck Builder --- */
 
-    #deck-builder-header { display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:20px }
+#deck-builder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(10, 10, 26, 0.95);
+  z-index: 100;
+}
 
-    #deck-builder-header h2 { font-size:28px; text-shadow:0 0 10px #60f0ff }
+#deck-builder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 20px;
+}
 
-    #deck-info { display:flex; gap:20px }
+#deck-builder-header h2 {
+  font-size: 32px;
+  text-shadow: 0 0 10px #60f0ff;
+  letter-spacing: 2px;
+}
 
-    .deck-stat { font-size:16px }
+#deck-info {
+  display: flex;
+  gap: 20px;
+  background: rgba(30, 30, 60, 0.5);
+  padding: 10px 20px;
+  border-radius: 8px;
+}
 
-    #deck-builder-content { display:flex; flex:1; gap:20px }
+.deck-stat {
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+}
 
-    #card-collection, #current-deck { flex:1; background:rgba(30,30,60,0.5); border-radius:8px; padding:10px; display:flex; flex-wrap:wrap; gap:10px; overflow-y:auto; min-height:200px }
+.deck-stat span {
+  color: #60f0ff;
+  font-weight: bold;
+  margin-left: 5px;
+}
 
-    .collection-card { width:90px; height:120px; background:#252550; border:2px solid #4a4a8a; border-radius:8px; cursor:pointer; transition:transform .2s }
+#deck-builder-content {
+  display: flex;
+  flex: 1;
+  gap: 30px;
+  margin-bottom: 20px;
+  min-height: 400px;
+}
 
-    .collection-card:hover { transform:scale(1.05) }
+#card-collection, #current-deck {
+  flex: 1;
+  background: rgba(30, 30, 60, 0.5);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  overflow-y: auto;
+  position: relative;
+}
 
-    .collection-card.selected { border-color:#60f0ff; box-shadow:0 0 15px rgba(60,240,255,0.7) }
+#card-collection::before, #current-deck::before {
+  content: attr(data-title);
+  position: absolute;
+  top: -30px;
+  left: 0;
+  font-size: 18px;
+  color: #aaa;
+}
 
-    #deck-builder-footer { display:flex; justify-content:space-between; width:100%; margin-top:20px }
+#card-collection {
+  justify-content: flex-start;
+}
+
+#current-deck {
+  border: 2px dashed rgba(96, 240, 255, 0.3);
+}
+
+.collection-card {
+  width: 100px;
+  height: 140px;
+  background: #252550;
+  border: 2px solid #4a4a8a;
+  border-radius: 8px;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+}
+
+.collection-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+.collection-card.selected {
+  border-color: #60f0ff;
+  box-shadow: 0 0 15px rgba(60, 240, 255, 0.7);
+}
+
+.card-cost {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 24px;
+  height: 24px;
+  background: #60f0ff;
+  color: #000;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.card-type {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 10px;
+  color: #aaa;
+  text-transform: uppercase;
+}
+
+.card-icon {
+  width: 60px;
+  height: 60px;
+  margin-top: 20px;
+  background: rgba(60, 60, 100, 0.3);
+  border-radius: 50%;
+}
+
+.card-title {
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: auto;
+}
+
+.card-desc {
+  width: 100%;
+  text-align: center;
+  font-size: 8px;
+  color: #bbb;
+  margin-top: 4px;
+}
+
+#deck-builder-footer {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+#deck-info-details {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 14px;
+  color: #aaa;
+}
+
+.menu-button {
+  padding: 12px 25px;
+  font-size: 20px;
+  background: #2a2a5a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+  letter-spacing: 1px;
+}
+
+.menu-button:hover {
+  background: #4a4a8a;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+#save-deck-button {
+  background: linear-gradient(135deg, #2a2a5a, #4a4a9a);
+  border: 1px solid #60f0ff;
+  box-shadow: 0 0 10px rgba(60, 240, 255, 0.3);
+}
+
+#save-deck-button:hover {
+  box-shadow: 0 0 15px rgba(60, 240, 255, 0.7);
+}
 
     /* --- Tutorial --- */
 
