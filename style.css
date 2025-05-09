@@ -323,3 +323,33 @@ canvas {
 #tutorial-close:hover {
   background: #4a4a8a;
 }
+
+/* Add glow effect for units */
+.unit {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.unit.player {
+  box-shadow: 0 0 15px #60f0ff;
+}
+
+.unit.enemy {
+  box-shadow: 0 0 15px #ff6060;
+}
+
+/* Particle glow effect */
+.particle {
+  animation: particle-glow 1s forwards;
+}
+
+@keyframes particle-glow {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}

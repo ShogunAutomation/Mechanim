@@ -163,13 +163,21 @@ function update(dt) {
     aiPlay();
   }
 
+  // Tag units for visual effects
+  gameState.tagUnitsForVisuals();
+
   // Update game objects
   const gameObjects = gameState.getGameObjects();
   gameObjects.forEach((o) => o.update(dt));
   gameState.filterGameObjects();
 
-  // Update particles
-  gameState.updateParticles(dt);
+  // Update particles for attacks and effects
+  const particles = gameState.get('particles'); // Correct accessor for particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    if (!particles[i].update(dt)) {
+      particles.splice(i, 1); // Remove expired particles
+    }
+  }
 
   // Update UI
   updateUI();
@@ -182,6 +190,9 @@ function render() {
   
   ctx.clearRect(0, 0, w, h);
   gameState.getGameObjects().forEach((o) => o.render());
+  
+  // Render particles for visual effects
+  gameState.get('particles').forEach((p) => p.render()); // Correct accessor for particles
 }
 
 function aiPlay() {

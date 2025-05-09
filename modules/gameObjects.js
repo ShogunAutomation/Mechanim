@@ -33,10 +33,13 @@ export class GameObject {
           this.target.takeDamage(this.damage);
           this.cooldown = 1 / this.aspd;
           this.spawnEffect(this.target);
+          this.spawnProjectile(this.target); // Add projectile effect
         }
       } else if (this.speed > 0) {
-        this.x += (dx / dist) * this.speed * dt;
-        this.y += (dy / dist) * this.speed * dt;
+        // Separation mechanic to prevent clumping
+        const separation = this.calculateSeparation();
+        this.x += ((dx / dist) + separation.x) * this.speed * dt;
+        this.y += ((dy / dist) + separation.y) * this.speed * dt;
       }
     }
   }
@@ -115,15 +118,66 @@ export class GameObject {
       return;
     }
     
-    // body
-    ctx.fillStyle = this.faction === "player" ? "#4080ff" : "#ff4040";
-    ctx.fillRect(this.x, this.y, this.w, this.h);
+    // Differentiate unit types visually with shapes
+    if (this.type === "unit") {
+      ctx.fillStyle = this.subtype === "basic" 
+        ? (this.faction === "player" ? "#4080ff" : "#ff4040") 
+        : (this.faction === "player" ? "#204080" : "#802020");
+      
+      if (this.subtype === "basic") {
+        // Draw a rectangle for basic units
+        ctx.fillRect(this.x, this.y, this.w, this.h);
+      } else if (this.subtype === "tank") {
+        // Draw a circle for tank units
+        ctx.beginPath();
+        ctx.arc(this.x + this.w / 2, this.y + this.h / 2, this.w / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      // Default shape for other types
+      ctx.fillStyle = this.faction === "player" ? "#4080ff" : "#ff4040";
+      ctx.fillRect(this.x, this.y, this.w, this.h);
+    }
+    
     // health bar
     const pct = this.health / this.maxHealth;
     ctx.fillStyle = "#333";
     ctx.fillRect(this.x, this.y + this.h + 2, this.w, 4);
     ctx.fillStyle = pct > 0.6 ? "#2f2" : pct > 0.3 ? "#ff2" : "#f22";
     ctx.fillRect(this.x, this.y + this.h + 2, this.w * pct, 4);
+  }
+
+  // Add a method to calculate separation force
+  calculateSeparation() {
+    const separationForce = { x: 0, y: 0 };
+    const neighbors = gameState.getGameObjects().filter(
+      (o) => o !== this && o.faction === this.faction && !o.remove
+    );
+
+    neighbors.forEach((neighbor) => {
+      const dx = this.x - neighbor.x;
+      const dy = this.y - neighbor.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 50) { // Separation threshold
+        separationForce.x += dx / dist;
+        separationForce.y += dy / dist;
+      }
+    });
+
+    return separationForce;
+  }
+
+  spawnProjectile(tgt) {
+    gameState.addParticle(
+      new Particle(
+        this.x + this.w / 2,
+        this.y + this.h / 2,
+        tgt.x + tgt.w / 2,
+        tgt.y + tgt.h / 2,
+        this.faction === "player" ? "#60f0ff" : "#ff6060",
+        0.3 // Shorter duration for projectiles
+      )
+    );
   }
 }
 
@@ -245,8 +299,26 @@ export class Mech extends GameObject {
       return;
     }
     
-    ctx.fillStyle = this.faction === "player" ? "#4080ff" : "#ff4040";
-    ctx.fillRect(this.x, this.y, this.w, this.h);
+    // Differentiate unit types visually with shapes
+    if (this.type === "unit") {
+      ctx.fillStyle = this.subtype === "basic" 
+        ? (this.faction === "player" ? "#4080ff" : "#ff4040") 
+        : (this.faction === "player" ? "#204080" : "#802020");
+      
+      if (this.subtype === "basic") {
+        // Draw a rectangle for basic units
+        ctx.fillRect(this.x, this.y, this.w, this.h);
+      } else if (this.subtype === "tank") {
+        // Draw a circle for tank units
+        ctx.beginPath();
+        ctx.arc(this.x + this.w / 2, this.y + this.h / 2, this.w / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      // Default shape for other types
+      ctx.fillStyle = this.faction === "player" ? "#4080ff" : "#ff4040";
+      ctx.fillRect(this.x, this.y, this.w, this.h);
+    }
     const pct = this.health / this.maxHealth;
     ctx.fillStyle = "#333";
     ctx.fillRect(this.x, this.y + 42, this.w, 4);
@@ -324,7 +396,7 @@ export class Particle {
     const t = this.time / this.dur;
     ctx.globalAlpha = 1 - t;
     ctx.strokeStyle = this.color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3; // Thicker line for better visibility
     ctx.beginPath();
     ctx.moveTo(this.x1, this.y1);
     ctx.lineTo(

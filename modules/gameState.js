@@ -210,3 +210,15 @@ export function showTutorial(show = true) {
   state.tutorialModal.style.display = show ? 'flex' : 'none';
   console.log(`Tutorial ${show ? 'shown' : 'hidden'}`);
 }
+
+export function tagUnitsForVisuals() {
+  const gameObjects = getGameObjects();
+  gameObjects.forEach((obj) => {
+    if (obj.type === "unit") {
+      const unitElement = document.querySelector(`[data-id="${obj.id}"]`);
+      if (unitElement) {
+        unitElement.classList.add("unit", obj.faction);
+      }
+    }
+  });
+}
