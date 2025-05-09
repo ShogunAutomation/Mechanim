@@ -162,12 +162,8 @@ function initCards() {
 
 
 function toggleDeck(idx, el) {
-  const pos = playerDeck.indexOf(idx);
-  if (pos >= 0) {
-    playerDeck.splice(pos, 1);
-    el.classList.remove("selected");
-  } else if (playerDeck.length < 20) {
-    playerDeck.push(idx);
+  if (playerDeck.length < 20) {
+    playerDeck.push(idx); // Allow duplicates by simply adding the index
     el.classList.add("selected");
   }
   document.getElementById("deck-card-count").textContent = playerDeck.length;
