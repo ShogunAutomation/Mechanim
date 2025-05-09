@@ -15,7 +15,7 @@ body {
 }
 @font-face {
   font-family: "Orbitron";
-  src: url(https://cdnjs.cloudflare.com/ajax/libs/orbitron/9.0.0/Orbitron-Regular.ttf);
+  src: url(https://fonts.gstatic.com/s/orbitron/v29/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nyGy6xpmIyXjU1pg.woff2) format('woff2');
 }
 /* --- layout --- */
 #resource-bar {
