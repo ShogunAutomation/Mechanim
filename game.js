@@ -50,6 +50,26 @@ window.onload = () => {
     showTutorial();
     localStorage.tutorialShown = "1";
   }
+
+  // Add this line to enable click debugging
+  debugCardClicks();
+
+  // Additional diagnostics for card elements
+  setTimeout(function() {
+    const cards = document.querySelectorAll('.card');
+    console.log(`Found ${cards.length} card elements`);
+    
+    cards.forEach((card, i) => {
+      console.log(`Card ${i} is clickable:`, getComputedStyle(card).pointerEvents !== 'none');
+      // Add a direct test click handler
+      card.setAttribute('onclick', 'console.log("Inline card click ' + i + '")');
+    });
+    
+    // Test event bubbling
+    document.getElementById("card-hand").addEventListener('click', function(e) {
+      console.log("Card hand clicked:", e.target);
+    }, true); // Use capture phase
+  }, 1000); // Wait for everything to be ready
 };
 
 function resize() {
@@ -67,7 +87,71 @@ function setupUI() {
   document.getElementById("back-button").onclick = closeDeckBuilder;
   document.getElementById("save-deck-button").onclick = saveDeck;
   document.getElementById("tutorial-close").onclick = closeTutorial;
-  document.getElementById("card-hand").onclick = handleCardClick;
+
+  const cardCollection = document.getElementById("card-collection");
+  if (cardCollection) {
+    cardCollection.addEventListener("click", (evt) => {
+      const cardEl = evt.target.closest(".collection-card");
+      if (cardEl) handleDeckBuilderClick(cardEl);
+    });
+  }
+
+  const currentDeck = document.getElementById("current-deck");
+  if (currentDeck) {
+    currentDeck.addEventListener("click", (evt) => {
+      const cardEl = evt.target.closest(".collection-card");
+      if (cardEl) handleDeckBuilderClick(cardEl);
+    });
+  }
+
+  const cardHand = document.getElementById("card-hand");
+  if (cardHand) {
+    cardHand.addEventListener("click", function(evt) {
+      console.log("Card hand received click event", evt.target);
+      const cardEl = evt.target.closest(".card");
+      if (cardEl) {
+        const idx = parseInt(cardEl.dataset.handIdx);
+        if (!isNaN(idx)) {
+          console.log(`Card detected via delegation: ${idx}`);
+          if (gameRunning) {
+            playCard(idx);
+          }
+        }
+      }
+    });
+    console.log("Card hand click listener re-attached with proper delegation.");
+  }
+  console.log("Click listeners attached for deck builder and battle contexts.");
+}
+
+function handleDeckBuilderClick(cardEl) {
+  const idx = parseInt(cardEl.dataset.cardIdx);
+  if (isNaN(idx)) {
+    console.error("Invalid card index in deck builder.");
+    return;
+  }
+  toggleDeck(idx, cardEl);
+}
+
+function handleBattleClick(cardEl) {
+  console.log("Card clicked:", cardEl); // Debug the actual element
+  
+  if (!gameRunning) {
+    console.warn("Game is not running. Ignoring card click.");
+    return;
+  }
+  
+  const idx = parseInt(cardEl.dataset.handIdx);
+  console.log("Card index:", idx, "data attribute:", cardEl.dataset.handIdx); // Debug index extraction
+  
+  if (isNaN(idx)) {
+    console.error("Invalid card index in battle.");
+    return;
+  }
+  
+  const card = allCards[playerHand[idx]];
+  console.log(`Card clicked in battle: Hand Index = ${idx}, Card =`, card);
+  playCard(idx);
 }
 
 function showTutorial() {
@@ -130,7 +214,7 @@ function initCards() {
 
   const collection = document.getElementById("card-collection");
   collection.innerHTML = ''; // Clear existing cards
-  
+
   allCards.forEach((card, idx) => {
     const el = document.createElement("div");
     el.className = "collection-card";
@@ -148,19 +232,6 @@ function initCards() {
   updateCurrentDeckDisplay();
 }
 
-  const collection = document.getElementById("card-collection");
-  allCards.forEach((card, idx) => {
-    const el = document.createElement("div");
-    el.className = "collection-card";
-    el.innerHTML = `
-          <div style="position:absolute;top:5px;left:5px;color:#60f0ff;font-weight:bold;">${card.cost}</div>
-          <div style="position:absolute;bottom:5px;width:100%;text-align:center;font-size:8px;">${card.name}</div>
-        `;
-    el.onclick = () => toggleDeck(idx, el);
-    collection.appendChild(el);
-  });
-
-
 function toggleDeck(idx, el) {
   if (playerDeck.length < 20) {
     playerDeck.push(idx); // Allow duplicates by simply adding the index
@@ -175,7 +246,7 @@ function saveDeck() {
     alert("Your deck is empty! Please add some cards before saving.");
     return;
   }
-  
+
   localStorage.playerDeck = JSON.stringify(playerDeck);
   closeDeckBuilder();
 }
@@ -197,18 +268,18 @@ function loadDeck() {
 function updateCurrentDeckDisplay() {
   const currentDeckEl = document.getElementById("current-deck");
   currentDeckEl.innerHTML = '';
-  
+
   // Create a count of each card in the deck
   const cardCounts = {};
   playerDeck.forEach(idx => {
     cardCounts[idx] = (cardCounts[idx] || 0) + 1;
   });
-  
+
   // Display each unique card with count
   Object.keys(cardCounts).forEach(idx => {
     const card = allCards[idx];
     const count = cardCounts[idx];
-    
+
     const el = document.createElement("div");
     el.className = "collection-card";
     el.innerHTML = `
@@ -220,7 +291,7 @@ function updateCurrentDeckDisplay() {
     `;
     currentDeckEl.appendChild(el);
   });
-  
+
   // If deck is empty, show a message
   if (playerDeck.length === 0) {
     const emptyMsg = document.createElement("div");
@@ -463,8 +534,8 @@ class Obelisk extends GameObject {
       this.faction === "neutral"
         ? "#888"
         : this.faction === "player"
-        ? "#60f0ff"
-        : "#ff6060";
+          ? "#60f0ff"
+          : "#ff6060";
     ctx.fillRect(this.x, this.y, this.w, this.h);
     // progress bar
     ctx.fillStyle = "#333";
@@ -591,6 +662,7 @@ function render() {
   // particles are rendered during update for smooth timing
 }
 
+// Simplify the updateUI function to use direct onclick handlers
 function updateUI() {
   document.getElementById("energy-value").textContent = `${Math.floor(
     pe
@@ -598,23 +670,72 @@ function updateUI() {
   document.getElementById("command-value").textContent = `${pm}/${CMD_BASE}`;
   document.getElementById("deck-count").textContent = `${playerDeck.length}`;
 
-  // render hand
+  // Render hand for battle - COMPLETELY REVISED APPROACH
   const handEl = document.getElementById("card-hand");
   handEl.innerHTML = "";
+  
   playerHand.forEach((cardIdx, i) => {
     const c = allCards[cardIdx];
     const d = document.createElement("div");
     d.className = "card";
     d.dataset.handIdx = i;
+    
+    // SIMPLIFIED CARD CONTENT
     d.innerHTML = `
-          <div class="card-cost">${c.cost}</div>
-          <div class="card-image"></div>
-          <div class="card-title">${c.name}</div>
-          <div class="card-desc">${c.desc}</div>
-        `;
+      <span class="card-cost">${c.cost}</span>
+      <span class="card-title">${c.name}</span>
+    `;
+    
+    // Multiple event types to ensure something catches
+    d.onclick = function() {
+      console.log(`CARD CLICKED: ${i} - ${c.name}`);
+      if (gameRunning) playCard(i);
+      return false; // Prevent default and stop propagation
+    };
+    
+    d.onmousedown = function() {
+      console.log(`CARD MOUSEDOWN: ${i} - ${c.name}`);
+      playCard(i);
+    };
+    
     handEl.appendChild(d);
   });
+
+  // Render current deck for deck builder
+  const currentDeckEl = document.getElementById("current-deck");
+  currentDeckEl.innerHTML = "";
+  const cardCounts = {};
+  playerDeck.forEach((idx) => {
+    cardCounts[idx] = (cardCounts[idx] || 0) + 1;
+  });
+  Object.keys(cardCounts).forEach((idx) => {
+    const card = allCards[idx];
+    const count = cardCounts[idx];
+    const el = document.createElement("div");
+    el.className = "collection-card";
+    el.dataset.cardIdx = idx;
+    el.innerHTML = `
+      <div class="card-cost">${card.cost}</div>
+      <div class="card-type">${card.type}</div>
+      <div class="card-title">${card.name} x${count}</div>
+      <div class="card-desc">${card.desc}</div>
+    `;
+    currentDeckEl.appendChild(el);
+  });
 }
+
+// Remove or simplify the global diagnostic listener since we're using direct onclick
+document.addEventListener("DOMContentLoaded", function() {
+  const handArea = document.querySelector("#hand-area");
+  if (handArea) {
+    handArea.addEventListener("click", function(e) {
+      // Only log if clicked directly on hand area (not on a card)
+      if (e.target === handArea || e.target === document.getElementById("card-hand")) {
+        console.log("Click in hand area background");
+      }
+    });
+  }
+});
 
 function drawCard(who) {
   if (who === "player" && playerHand.length < MAX_HAND) {
@@ -625,20 +746,16 @@ function drawCard(who) {
   }
 }
 
-function handleCardClick(evt) {
-  if (!gameRunning) return;
-  const cardEl = evt.target.closest(".card");
-  if (!cardEl) return;
-  const idx = parseInt(cardEl.dataset.handIdx);
-  playCard(idx);
-}
-
 function playCard(handIdx) {
   const idx = playerHand[handIdx];
   const card = allCards[idx];
-  if (pe < card.cost) return;
+  if (pe < card.cost) {
+    console.log(`Not enough energy to play card: ${card.name} (Cost: ${card.cost}, Energy: ${pe})`);
+    return;
+  }
   pe -= card.cost;
   playerHand.splice(handIdx, 1);
+  console.log(`Card played: ${card.name} (Type: ${card.type}, Cost: ${card.cost})`);
 
   if (card.type === "unit") {
     const m = new Mech(150, h - 200, card.unit, "player");
@@ -651,11 +768,13 @@ function playCard(handIdx) {
     );
     if (friendlies.length > 0) {
       friendlies.sort((a, b) => a.health - b.health);
+      console.log(`Spell effect applied to: ${friendlies[0].type} (Health: ${friendlies[0].health})`);
       card.effect(friendlies[0]);
     }
   } else if (card.type === "structure") {
     // place a turret spawn point
     gameObjects.push(new Headquarters(w / 2 - 40, h - 100, "player"));
+    console.log(`Structure placed: ${card.name}`);
   }
 }
 
@@ -682,4 +801,13 @@ function endGame(playerLost) {
     ? "DEFEAT"
     : "VICTORY";
   eEnd.style.display = "flex";
+}
+
+// Add a simple diagnostic function to help identify click issues
+function debugCardClicks() {
+  document.addEventListener("click", function(e) {
+    console.log("Document click on:", e.target);
+    console.log("Closest card:", e.target.closest(".card"));
+    console.log("Event path:", e.composedPath().map(el => el.tagName || el.id || el.className).join(' > '));
+  }, true); // Use capture phase to see all clicks
 }
