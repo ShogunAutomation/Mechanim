@@ -1,25 +1,111 @@
-/* a minimalist set of CSS resets */
+/* --- reset & fonts --- */
 
-/* default to border-box */
-html {
-  box-sizing: border-box;
-  font-size: 16px;
-}
+    * { margin:0; padding:0; box-sizing:border-box }
 
-*, *:before, *:after {
-  box-sizing: inherit;
-}
+    body { font-family: 'Orbitron', sans-serif; background:#0a0a1a; color:#e0e0ff; overflow:hidden; height:100vh; display:flex; flex-direction:column }
 
-/* adjust typography defaults */
-body {
-  margin: 1rem;
-  font-family: sans-serif;
-  line-height: 1.5;
-}
+    @font-face {
 
-/* images and videos max out at full width */
-img,
-video {
-  height: auto;
-  max-width: 100%;
-}
+      font-family:'Orbitron'; src:url(https://cdnjs.cloudflare.com/ajax/libs/orbitron/9.0.0/Orbitron-Regular.ttf);
+
+    }
+
+    /* --- layout --- */
+
+    #resource-bar { height:40px; background:#151530; display:flex; align-items:center; padding:0 20px; border-bottom:1px solid #2a2a5a; z-index:10 }
+
+    .resource { display:flex; align-items:center; margin-right:20px }
+
+    .resource-icon { width:20px; height:20px; margin-right:5px; background-size:contain; background-repeat:no-repeat }
+
+    .energy-icon { background-color:#60f0ff; border-radius:50%; box-shadow:0 0 10px #60f0ff }
+
+    .command-icon { background-color:#ff6060; clip-path:polygon(50% 0,100% 38%,82% 100%,18% 100%,0 38%); box-shadow:0 0 10px #ff6060 }
+
+    .resource-value { font-weight:bold; font-size:16px }
+
+    #main-area { display:flex; flex:1; position:relative }
+
+    #battlefield { flex:1; background:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23121226" width="100" height="100"/><path d="M0 50h100M50 0v100" stroke="%231a1a3a" stroke-width="1"/><path d="M0 0h100v100H0z" fill="none" stroke="%231a1a3a" stroke-width="1"/></svg>'); position:relative; overflow:hidden }
+
+    canvas { position:absolute; top:0; left:0; width:100%; height:100% }
+
+    #hand-area { height:150px; background:rgba(20,20,40,0.8); border-top:1px solid #2a2a5a; display:flex; align-items:center; padding:10px; position:relative }
+
+    #deck-pile { position:absolute; left:20px; width:90px; height:120px; background:#1a1a3a; border:2px solid #3a3a6a; border-radius:8px; display:flex; justify-content:center; align-items:center; font-size:24px; box-shadow:0 0 10px rgba(60,100,255,0.5) }
+
+    #card-hand { display:flex; justify-content:center; align-items:center; gap:10px; margin:0 auto }
+
+    .card { width:90px; height:120px; background:#252550; border:2px solid #4a4a8a; border-radius:8px; position:relative; cursor:pointer; transition:transform .2s,box-shadow .2s; overflow:hidden }
+
+    .card:hover { transform:translateY(-10px); box-shadow:0 10px 15px rgba(0,0,0,0.4) }
+
+    .card-cost { position:absolute; top:5px; left:5px; width:20px; height:20px; background:#60f0ff; color:#000; border-radius:50%; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:12px }
+
+    .card-title { position:absolute; bottom:25px; width:100%; text-align:center; font-size:9px; font-weight:bold }
+
+    .card-image { position:absolute; top:15px; left:50%; transform:translateX(-50%); width:60px; height:60px; background-size:contain; background-repeat:no-repeat; background-position:center }
+
+    .card-desc { position:absolute; bottom:5px; width:100%; text-align:center; font-size:7px; padding:0 3px; color:#ccc }
+
+    .effect-text { position:absolute; color:white; font-weight:bold; text-shadow:0 0 3px black; animation:float-up 1.5s forwards; pointer-events:none }
+
+    @keyframes float-up { to { opacity:0; transform:translateY(-40px) } }
+
+    /* --- full-screen overlays --- */
+
+    .overlay {
+
+      position:absolute; top:0; left:0; width:100%; height:100%;
+
+      background:rgba(10,10,26,0.95); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:100
+
+    }
+
+    /* --- Menu & End --- */
+
+    #menu-screen h1, #end-screen #end-message { text-shadow:0 0 20px #60f0ff }
+
+    #menu-screen h1 { font-size:48px; margin-bottom:60px }
+
+    #end-screen #end-message { font-size:48px; margin-bottom:30px }
+
+    .menu-button { padding:15px 30px; font-size:24px; margin:10px; background:#2a2a5a; color:#fff; border:none; border-radius:8px; cursor:pointer; transition:background .3s }
+
+    .menu-button:hover { background:#4a4a8a }
+
+    /* --- Deck Builder --- */
+
+    #deck-builder { padding:20px; display:flex; flex-direction:column }
+
+    #deck-builder-header { display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:20px }
+
+    #deck-builder-header h2 { font-size:28px; text-shadow:0 0 10px #60f0ff }
+
+    #deck-info { display:flex; gap:20px }
+
+    .deck-stat { font-size:16px }
+
+    #deck-builder-content { display:flex; flex:1; gap:20px }
+
+    #card-collection, #current-deck { flex:1; background:rgba(30,30,60,0.5); border-radius:8px; padding:10px; display:flex; flex-wrap:wrap; gap:10px; overflow-y:auto; min-height:200px }
+
+    .collection-card { width:90px; height:120px; background:#252550; border:2px solid #4a4a8a; border-radius:8px; cursor:pointer; transition:transform .2s }
+
+    .collection-card:hover { transform:scale(1.05) }
+
+    .collection-card.selected { border-color:#60f0ff; box-shadow:0 0 15px rgba(60,240,255,0.7) }
+
+    #deck-builder-footer { display:flex; justify-content:space-between; width:100%; margin-top:20px }
+
+    /* --- Tutorial --- */
+
+    #tutorial-modal { padding:20px; max-width:600px; background:#151530; border:2px solid #2a2a5a; border-radius:8px; }
+
+    #tutorial-title { font-size:24px; color:#60f0ff; margin-bottom:20px; text-align:center }
+
+    #tutorial-content { font-size:16px; line-height:1.6; margin-bottom:20px }
+
+    #tutorial-close { padding:10px 20px; font-size:16px; background:#2a2a5a; color:#fff; border:none; border-radius:8px; cursor:pointer; }
+
+    #tutorial-close:hover { background:#4a4a8a }
