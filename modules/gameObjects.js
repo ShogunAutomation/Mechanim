@@ -26,6 +26,19 @@ export class GameObject {
     if (this.cooldown > 0) this.cooldown -= dt;
     if (!this.target || this.target.remove) this.acquireTarget();
     if (this.target) {
+      // Prevent attacking obelisks, only move toward them for capture
+      if (this.target.type === "obelisk") {
+        const dx = this.target.x - this.x,
+              dy = this.target.y - this.y;
+        const dist = Math.hypot(dx, dy);
+        if (this.speed > 0 && dist > 5) { // Move close, but don't attack
+          const separation = this.calculateSeparation();
+          this.x += ((dx / dist) + separation.x) * this.speed * dt;
+          this.y += ((dy / dist) + separation.y) * this.speed * dt;
+        }
+        return;
+      }
+      // ...existing code for attacking/moving to other targets...
       const dx = this.target.x - this.x,
         dy = this.target.y - this.y;
       const dist = Math.hypot(dx, dy);
@@ -37,7 +50,6 @@ export class GameObject {
           this.spawnProjectile(this.target); // Add projectile effect
         }
       } else if (this.speed > 0) {
-        // Separation mechanic to prevent clumping
         const separation = this.calculateSeparation();
         this.x += ((dx / dist) + separation.x) * this.speed * dt;
         this.y += ((dy / dist) + separation.y) * this.speed * dt;
@@ -46,24 +58,53 @@ export class GameObject {
   }
 
   acquireTarget() {
-    let minD = Infinity,
-      best = null;
-
-    // Fix: Use gameState.getGameObjects() instead of window.gameObjects
+    // Only units (not structures/HQs/obelisk) use this logic
+    if (this.type !== "unit") return;
     const gameObjects = gameState.getGameObjects();
-    if (!gameObjects) {
-      console.error("Game objects array is undefined");
-      return; // Prevent the forEach error
+    if (!gameObjects) return;
+
+    // 1. Try to find nearest enemy unit
+    let minD = Infinity, best = null;
+    gameObjects.forEach((o) => {
+      if (o.faction === this.faction || o.remove) return;
+      if (o.type === "unit") {
+        const d = Math.hypot(o.x - this.x, o.y - this.y);
+        if (d < minD) {
+          minD = d;
+          best = o;
+        }
+      }
+    });
+    if (best) {
+      this.target = best;
+      return;
     }
 
+    // 2. Try to find nearest obelisk not controlled by this faction
+    minD = Infinity; best = null;
     gameObjects.forEach((o) => {
-      // Skip targeting obelisks - they shouldn't be attacked
-      if (o.faction === this.faction || o.remove || o.type === "obelisk") return;
-      let d = Math.hypot(o.x - this.x, o.y - this.y);
-      if (o.type === "hq") d *= 0.5;
-      if (d < minD) {
-        minD = d;
-        best = o;
+      if (o.type === "obelisk" && o.faction !== this.faction && !o.remove) {
+        const d = Math.hypot(o.x - this.x, o.y - this.y);
+        if (d < minD) {
+          minD = d;
+          best = o;
+        }
+      }
+    });
+    if (best) {
+      this.target = best;
+      return;
+    }
+
+    // 3. Try to find enemy HQ
+    minD = Infinity; best = null;
+    gameObjects.forEach((o) => {
+      if (o.type === "hq" && o.faction !== this.faction && !o.remove) {
+        const d = Math.hypot(o.x - this.x, o.y - this.y);
+        if (d < minD) {
+          minD = d;
+          best = o;
+        }
       }
     });
     this.target = best;
