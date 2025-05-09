@@ -30,8 +30,10 @@ const state = {
   // Resources and counters
   playerEnergy: 0,
   playerMechs: 0,
+  playerObelisks: 0, // Track number of obelisks owned by player
   enemyEnergy: 0,
   enemyMechs: 0,
+  enemyObelisks: 0, // Track number of obelisks owned by enemy
   drawTimer: 0,
   spawnCooldown: 0,
   enemySpawnCooldown: 0,
@@ -192,11 +194,22 @@ export function resetGameState() {
   state.enemyEnergy = CONFIG.ENERGY_MAX;
   state.playerMechs = 0;
   state.enemyMechs = 0;
+  state.playerObelisks = 0; // Reset obelisk counts
+  state.enemyObelisks = 0;
   state.drawTimer = 0;
   state.spawnCooldown = 0;
   state.enemySpawnCooldown = 0;
   state.gameRunning = true;
   console.log("Game state reset");
+}
+
+// Get the current max command points for a faction
+export function getMaxCommand(faction) {
+  if (faction === "player") {
+    return CONFIG.CMD_BASE + (state.playerObelisks * 2); // Each obelisk gives 2 command points
+  } else {
+    return CONFIG.CMD_BASE + (state.enemyObelisks * 2);
+  }
 }
 
 // UI state management

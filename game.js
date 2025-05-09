@@ -115,9 +115,11 @@ function resetGame() {
 
   // Spawn obelisks
   [
-    [w / 2 - 50, h / 3],
-    [w / 3, h / 2 + 100],
-    [(2 * w) / 3, h / 2 + 100],
+    [w / 2 - 25, h / 3],            // Top center
+    [w / 3, h / 2 + 100],           // Bottom left
+    [(2 * w) / 3, h / 2 + 100],     // Bottom right
+    [w / 2 - 200, h / 3 - 50],      // Top left
+    [w / 2 + 200, h / 3 - 50],      // Top right
   ].forEach(([x, y]) => gameState.addGameObject(new Obelisk(x, y)));
 
   // Initial hands

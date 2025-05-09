@@ -373,3 +373,83 @@ canvas {
 .scrollable-area::-webkit-scrollbar-thumb:hover {
   background: #60f0ff;
 }
+
+/* Styles for captured obelisks */
+.captured-obelisk {
+  position: relative;
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* Add obelisk capture indicator */
+.obelisk-indicator {
+  position: absolute;
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 2px 5px;
+  font-size: 10px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.captured-indicator {
+  animation: float-bounce 1.5s infinite;
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+  text-shadow: 0 0 5px black;
+}
+
+/* Add styling for invulnerable obelisks */
+.invulnerable-object {
+  position: relative;
+}
+
+.invulnerable-object::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
+  border: 2px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 5px;
+  animation: rotate-border 10s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes rotate-border {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes float-bounce {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-5px);
+  }
+}

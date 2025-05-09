@@ -57,7 +57,8 @@ export class GameObject {
     }
 
     gameObjects.forEach((o) => {
-      if (o.faction === this.faction || o.remove) return;
+      // Skip targeting obelisks - they shouldn't be attacked
+      if (o.faction === this.faction || o.remove || o.type === "obelisk") return;
       let d = Math.hypot(o.x - this.x, o.y - this.y);
       if (o.type === "hq") d *= 0.5;
       if (d < minD) {
@@ -81,19 +82,24 @@ export class GameObject {
   }
 
   takeDamage(amount) {
+    // Prevent damage to obelisks
+    if (this.type === "obelisk") {
+      return; // Obelisks can't take damage
+    }
+    
     // Handle shield absorption first
     let damageToHealth = amount;
     
     if (this.shield && this.shield > 0) {
       if (this.shield >= damageToHealth) {
         // Shield absorbs all damage
-        this.shield -= damageToHealth;
         this.showShieldDamage(damageToHealth);
+        this.shield -= damageToHealth;
         return; // No health damage
       } else {
         // Shield absorbs partial damage
-        damageToHealth -= this.shield;
         this.showShieldDamage(this.shield);
+        damageToHealth -= this.shield;
         this.shield = 0;
       }
     }
@@ -120,7 +126,7 @@ export class GameObject {
       }
     }
   }
-
+  
   showShieldDamage(amount) {
     const et = document.createElement("div");
     et.className = "effect-text shield-damage";
@@ -131,7 +137,7 @@ export class GameObject {
     document.getElementById("battlefield").appendChild(et);
     setTimeout(() => et.remove(), 1500);
   }
-
+  
   showDamage(amount) {
     const et = document.createElement("div");
     et.className = "effect-text";
@@ -148,7 +154,7 @@ export class GameObject {
       console.error("Canvas context is undefined");
       return;
     }
-
+    
     // Differentiate unit types visually with shapes
     if (this.type === "unit") {
       ctx.fillStyle = this.subtype === "basic"
@@ -178,7 +184,6 @@ export class GameObject {
     ctx.fillRect(this.x, this.y + this.h + 2, this.w * pct, 4);
   }
 
-  // Add a method to calculate separation force
   calculateSeparation() {
     const separationForce = { x: 0, y: 0 };
     const neighbors = gameState.getGameObjects().filter(
@@ -212,7 +217,6 @@ export class GameObject {
   }
 }
 
-// MechType configuration - defines the properties for each mech type
 export const MechTypes = {
   basic: {
     health: 80,
@@ -226,7 +230,6 @@ export const MechTypes = {
       ctx.fillRect(mech.x, mech.y, mech.w, mech.h);
     }
   },
-
   tank: {
     health: 200,
     maxHealth: 200,
@@ -241,7 +244,6 @@ export const MechTypes = {
       ctx.fill();
     }
   },
-
   sniper: {
     health: 50,
     maxHealth: 50,
@@ -261,11 +263,9 @@ export const MechTypes = {
   }
 };
 
-// Factory class for creating different mech types
 export class MechFactory {
   static createMech(x, y, type, faction) {
     const mech = new Mech(x, y, type, faction);
-
     // Apply type-specific properties
     if (MechTypes[type]) {
       Object.assign(mech, MechTypes[type]);
@@ -273,7 +273,6 @@ export class MechFactory {
       console.warn(`Unknown mech type: ${type}, using basic properties`);
       Object.assign(mech, MechTypes.basic);
     }
-
     return mech;
   }
 }
@@ -290,7 +289,6 @@ export class Headquarters extends GameObject {
 
   update(dt) {
     super.update(dt);
-    
     const ctx = gameState.get('ctx');
     if (!ctx) return;
     
@@ -300,11 +298,10 @@ export class Headquarters extends GameObject {
     ctx.fillRect(this.x, this.y + 82, this.w, 6);
     ctx.fillStyle = pct > 0.6 ? "#2f2" : pct > 0.3 ? "#ff2" : "#f22";
     ctx.fillRect(this.x, this.y + 82, this.w * pct, 6);
-    
+
     // Handle unit spawning
     const spawnCooldown = this.faction === "player" ? 
       gameState.get('spawnCooldown') : gameState.get('enemySpawnCooldown');
-    
     if (spawnCooldown <= 0) {
       this.spawnUnit();
     }
@@ -319,7 +316,7 @@ export class Headquarters extends GameObject {
       this.faction
     );
     gameState.addGameObject(u);
-    
+
     // Update mech count
     if (this.faction === "player") {
       gameState.set('playerMechs', gameState.get('playerMechs') + 1);
@@ -328,7 +325,7 @@ export class Headquarters extends GameObject {
       gameState.set('enemyMechs', gameState.get('enemyMechs') + 1);
       gameState.set('enemySpawnCooldown', gameState.getConfig('SPAWN_CD'));
     }
-    
+
     // Visual effect for spawning
     gameState.addParticle(
       new Particle(
@@ -359,7 +356,7 @@ export class Mech extends GameObject {
 
     // Set fill style based on faction
     ctx.fillStyle = this.faction === "player" ? "#4080ff" : "#ff4040";
-    
+
     // Use the type-specific render method if available
     if (MechTypes[this.subtype] && MechTypes[this.subtype].renderMethod) {
       MechTypes[this.subtype].renderMethod(ctx, this);
@@ -367,7 +364,7 @@ export class Mech extends GameObject {
       // Fallback to basic rendering
       ctx.fillRect(this.x, this.y, this.w, this.h);
     }
-    
+
     // Draw shield if present
     if (this.shield && this.shield > 0) {
       ctx.strokeStyle = this.faction === "player" ? "#60f0ff" : "#ff6060";
@@ -376,7 +373,7 @@ export class Mech extends GameObject {
       ctx.arc(this.x + this.w / 2, this.y + this.h / 2, this.w / 2 + 5, 0, Math.PI * 2);
       ctx.stroke();
     }
-    
+
     // Render health bar
     const pct = this.health / this.maxHealth;
     ctx.fillStyle = "#333";
@@ -390,32 +387,124 @@ export class Obelisk extends GameObject {
   constructor(x, y) {
     super(x, y, 50, 50, "obelisk", "neutral");
     this.capture = 0; // -1..1
+    this.capturedBy = null; // Track which faction owns this obelisk
+    this.commandBonus = 2; // How many extra command points this obelisk provides
+    this.invulnerable = true; // Flag to ensure obelisks don't get damaged
   }
 
   update(dt) {
-    super.update(dt);
+    // Don't use super.update() as we don't want normal targeting behavior
+    if (this.cooldown > 0) this.cooldown -= dt;
     
+    const prevCapture = this.capture;
+    const prevFaction = this.faction;
+
     ["player", "enemy"].forEach((f) => {
       const inRange = gameState.getGameObjects().some(
         (o) =>
           o.faction === f &&
           Math.hypot(o.x - this.x, o.y - this.y) < gameState.getConfig('CAPTURE_DIST')
       );
-      
+
       if (inRange) {
         this.capture += (f === "player" ? gameState.getConfig('CAPTURE_RATE') : -gameState.getConfig('CAPTURE_RATE')) * dt;
         this.capture = Math.max(-1, Math.min(1, this.capture));
       }
-    });
+    });  
     
-    if (Math.abs(this.capture) >= 1 && this.faction === "neutral") {
-      this.faction = this.capture > 0 ? "player" : "enemy";
-      if (this.faction === "player") {
-        gameState.set('playerMechs', gameState.get('playerMechs') + 1);
-      } else {
-        gameState.set('enemyMechs', gameState.get('enemyMechs') + 1);
+    if (Math.abs(this.capture) >= 1) {
+      const newFaction = this.capture > 0 ? "player" : "enemy";
+      
+      // If the obelisk changed ownership
+      if (this.faction !== newFaction) {
+        // Update faction
+        this.faction = newFaction;
+        
+        // If previously captured by the other faction, remove that bonus first
+        if (prevFaction !== "neutral") {
+          if (prevFaction === "player") {
+            gameState.set('playerObelisks', gameState.get('playerObelisks') - 1);
+            console.log("Player lost an obelisk. Command decreased.");
+          } else {
+            gameState.set('enemyObelisks', gameState.get('enemyObelisks') - 1);
+            console.log("Enemy lost an obelisk. Command decreased.");
+          }   
+        }
+
+        // Add command bonus to new owner
+        if (this.faction === "player") {
+          gameState.set('playerObelisks', gameState.get('playerObelisks') + 1);
+          console.log("Player captured an obelisk! Command increased.");
+        } else {
+          gameState.set('enemyObelisks', gameState.get('enemyObelisks') + 1);
+          console.log("Enemy captured an obelisk! Command increased.");
+        }
+
+        // Create capture effect
+        this.createCaptureEffect();
+      }
+    } else {
+      // Handle neutral reversion when no units are nearby
+      const anyPlayerNearby = gameState.getGameObjects().some(
+        (o) => o.faction === "player" && 
+               Math.hypot(o.x - this.x, o.y - this.y) < gameState.getConfig('CAPTURE_DIST')
+      );
+      
+      const anyEnemyNearby = gameState.getGameObjects().some(
+        (o) => o.faction === "enemy" && 
+               Math.hypot(o.x - this.x, o.y - this.y) < gameState.getConfig('CAPTURE_DIST')
+      );
+      
+      // If no units nearby and capture is not at extremes, slowly revert toward neutral
+      if (!anyPlayerNearby && !anyEnemyNearby && Math.abs(this.capture) > 0 && Math.abs(this.capture) < 1) {
+        // Slowly revert toward neutral state
+        if (this.capture > 0) {
+          this.capture -= 0.05 * dt;
+          if (this.capture < 0) this.capture = 0;
+        } else if (this.capture < 0) {
+          this.capture += 0.05 * dt;
+          if (this.capture > 0) this.capture = 0;
+        }
       }
     }
+  }
+
+  takeDamage(amount) {
+    // Obelisks can't be damaged
+    return;
+  }
+
+  createCaptureEffect() {
+    // Visual effect when obelisk is captured
+    const color = this.faction === "player" ? "#60f0ff" : "#ff6060";
+
+    // Add particles shooting outward
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const endX = this.x + this.w/2 + Math.cos(angle) * 100;
+      const endY = this.y + this.h/2 + Math.sin(angle) * 100;
+      gameState.addParticle(
+        new Particle(
+          this.x + this.w/2,
+          this.y + this.h/2,
+          endX,
+          endY,
+          color,
+          0.8
+        )
+      );
+    }
+    
+    // Add text effect
+    const el = document.createElement("div");
+    el.className = "effect-text";
+    el.textContent = "CAPTURED!";
+    el.style.left = `${this.x + this.w / 2}px`;
+    el.style.top = `${this.y - 20}px`;
+    el.style.color = color;
+    el.style.fontSize = "18px";
+    document.getElementById("battlefield").appendChild(el);
+    setTimeout(() => el.remove(), 2000);
   }
 
   render() {
@@ -424,16 +513,28 @@ export class Obelisk extends GameObject {
       console.error("Canvas context is undefined");
       return;
     }
-    
-    ctx.fillStyle = 
-      this.faction === "neutral"
-        ? "#888"
-        : this.faction === "player"
-          ? "#60f0ff"
-          : "#ff6060";
+
+    // Draw base obelisk
+    ctx.fillStyle = this.faction === "neutral"
+      ? "#888"
+      : this.faction === "player"
+        ? "#60f0ff"
+        : "#ff6060";
     ctx.fillRect(this.x, this.y, this.w, this.h);
-    
-    // progress bar
+
+    // Draw top part to indicate ownership more clearly
+    if (this.faction !== "neutral") {
+      const glowColor = this.faction === "player" ? "rgba(96, 240, 255, 0.7)" : "rgba(255, 96, 96, 0.7)";
+      ctx.fillStyle = glowColor;
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y);
+      ctx.lineTo(this.x + this.w/2, this.y - 15);
+      ctx.lineTo(this.x + this.w, this.y);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Progress bar for capture status
     ctx.fillStyle = "#333";
     ctx.fillRect(this.x, this.y + 52, this.w, 4);
     const wProg = ((this.capture + 1) / 2) * this.w;
@@ -458,7 +559,7 @@ export class Particle {
       console.error("Canvas context is undefined");
       return;
     }
-    
+
     const t = this.time / this.dur;
     ctx.globalAlpha = 1 - t;
     ctx.strokeStyle = this.color;
@@ -507,14 +608,12 @@ export class ShieldGenerator extends GameObject {
       ally.shield = Math.min(ally.shield + this.shieldStrength, 50);
 
       // Create visual effect
-      gameState.addParticle(
-        new ShieldEffect(
-          ally.x + ally.w / 2,
-          ally.y + ally.h / 2,
-          ally.w * 1.2,
-          this.faction === "player" ? "#60f0ff" : "#ff6060"
-        )
-      );
+      gameState.addParticle(new ShieldEffect(
+        ally.x + ally.w / 2,
+        ally.y + ally.h / 2,
+        ally.w * 1.2,
+        this.faction === "player" ? "#60f0ff" : "#ff6060"
+      ));
     });
   }
 
@@ -649,7 +748,6 @@ export class EMPEffect extends Particle {
       const jitter = Math.random() * 10 - 5;
       const x = this.x1 + Math.cos(angle) * (currentRadius + jitter);
       const y = this.y1 + Math.sin(angle) * (currentRadius + jitter);
-
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }

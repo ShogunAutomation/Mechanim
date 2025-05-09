@@ -86,9 +86,13 @@ export function updateUI() {
   document.getElementById("energy-value").textContent = `${Math.floor(
     gameState.get('playerEnergy')
   )}/${gameState.getConfig('ENERGY_MAX')}`;
+  
+  // Update command value to include obelisk bonuses
+  const maxCommand = gameState.getMaxCommand("player");
   document.getElementById("command-value").textContent = `${
     gameState.get('playerMechs')
-  }/${gameState.getConfig('CMD_BASE')}`;
+  }/${maxCommand}`;
+  
   document.getElementById("deck-count").textContent = `${playerDeck.length}`;
 
   // Render hand for battle
