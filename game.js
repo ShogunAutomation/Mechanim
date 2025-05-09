@@ -80,7 +80,11 @@ function closeTutorial() {
 function openDeckBuilder() {
   eMenu.style.display = "none";
   eDeckB.style.display = "flex";
+  // Make sure cards are properly initialized
+  initCards();
+  loadDeck();
 }
+
 function closeDeckBuilder() {
   eDeckB.style.display = "none";
   eMenu.style.display = "flex";
@@ -94,14 +98,16 @@ function initCards() {
       type: "unit",
       cost: 2,
       unit: "basic",
-      desc: "Spawn a basic mech.",
+      desc: "Spawn a basic mech with balanced stats.",
+      icon: "🤖"
     },
     {
       name: "Tank Mech",
       type: "unit",
       cost: 4,
       unit: "tank",
-      desc: "Spawn a heavy tank.",
+      desc: "Spawn a heavy tank with high health and damage.",
+      icon: "🛡️"
     },
     {
       name: "Heal Spell",
@@ -110,15 +116,37 @@ function initCards() {
       effect: (target) => {
         target.health = Math.min(target.health + 30, target.maxHealth);
       },
-      desc: "Heal 30 HP to nearest unit.",
+      desc: "Heal 30 HP to nearest friendly unit.",
+      icon: "✨"
     },
     {
       name: "Turret",
       type: "structure",
       cost: 5,
-      desc: "Place a turret spawn point.",
-    },
+      desc: "Place a turret spawn point to defend your base.",
+      icon: "🔫"
+    }
   ];
+
+  const collection = document.getElementById("card-collection");
+  collection.innerHTML = ''; // Clear existing cards
+  
+  allCards.forEach((card, idx) => {
+    const el = document.createElement("div");
+    el.className = "collection-card";
+    el.innerHTML = `
+      <div class="card-cost">${card.cost}</div>
+      <div class="card-type">${card.type}</div>
+      <div class="card-icon">${card.icon || ''}</div>
+      <div class="card-title">${card.name}</div>
+      <div class="card-desc">${card.desc}</div>
+    `;
+    el.onclick = () => toggleDeck(idx, el);
+    collection.appendChild(el);
+  });
+
+  updateCurrentDeckDisplay();
+}
 
   const collection = document.getElementById("card-collection");
   allCards.forEach((card, idx) => {
@@ -143,9 +171,15 @@ function toggleDeck(idx, el) {
     el.classList.add("selected");
   }
   document.getElementById("deck-card-count").textContent = playerDeck.length;
+  updateCurrentDeckDisplay();
 }
 
 function saveDeck() {
+  if (playerDeck.length === 0) {
+    alert("Your deck is empty! Please add some cards before saving.");
+    return;
+  }
+  
   localStorage.playerDeck = JSON.stringify(playerDeck);
   closeDeckBuilder();
 }
@@ -161,6 +195,46 @@ function loadDeck() {
     playerDeck = [0, 0, 1, 1, 2, 2, 3];
   }
   document.getElementById("deck-card-count").textContent = playerDeck.length;
+  updateCurrentDeckDisplay();
+}
+
+function updateCurrentDeckDisplay() {
+  const currentDeckEl = document.getElementById("current-deck");
+  currentDeckEl.innerHTML = '';
+  
+  // Create a count of each card in the deck
+  const cardCounts = {};
+  playerDeck.forEach(idx => {
+    cardCounts[idx] = (cardCounts[idx] || 0) + 1;
+  });
+  
+  // Display each unique card with count
+  Object.keys(cardCounts).forEach(idx => {
+    const card = allCards[idx];
+    const count = cardCounts[idx];
+    
+    const el = document.createElement("div");
+    el.className = "collection-card";
+    el.innerHTML = `
+      <div class="card-cost">${card.cost}</div>
+      <div class="card-type">${card.type}</div>
+      <div class="card-icon">${card.icon || ''}</div>
+      <div class="card-title">${card.name} x${count}</div>
+      <div class="card-desc">${card.desc}</div>
+    `;
+    currentDeckEl.appendChild(el);
+  });
+  
+  // If deck is empty, show a message
+  if (playerDeck.length === 0) {
+    const emptyMsg = document.createElement("div");
+    emptyMsg.style.width = "100%";
+    emptyMsg.style.textAlign = "center";
+    emptyMsg.style.padding = "40px 0";
+    emptyMsg.style.color = "#aaa";
+    emptyMsg.textContent = "Your deck is empty. Click cards from the collection to add them.";
+    currentDeckEl.appendChild(emptyMsg);
+  }
 }
 
 // ==== Game Objects & Logic ====
