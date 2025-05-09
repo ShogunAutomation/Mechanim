@@ -38,22 +38,34 @@
     <button class="menu-button" id="restart-button">PLAY AGAIN</button>
   </div>
   <!-- Deck Builder -->
-  <div id="deck-builder" class="overlay">
-    <div id="deck-builder-header">
-      <h2>DECK BUILDER</h2>
-      <div id="deck-info">
-        <div class="deck-stat">Cards: <span id="deck-card-count">0</span>/20</div>
-      </div>
-    </div>
-    <div id="deck-builder-content">
-      <div id="card-collection"></div>
-      <div id="current-deck"></div>
-    </div>
-    <div id="deck-builder-footer">
-      <button class="menu-button" id="back-button">BACK TO MENU</button>
-      <button class="menu-button" id="save-deck-button">SAVE DECK</button>
-    </div>
-  </div>
+<div id="deck-builder" class="overlay">
+  <div id="deck-builder-header">
+    <h2>DECK BUILDER</h2>
+    <div id="deck-info">
+      <div class="deck-stat">Cards: <span id="deck-card-count">0</span>/20</div>
+    </div>
+  </div>
+  
+  <div id="deck-builder-content">
+    <div id="card-collection" data-title="COLLECTION">
+      <!-- Cards will be generated here by JavaScript -->
+    </div>
+    
+    <div id="current-deck" data-title="YOUR DECK">
+      <!-- Selected cards will appear here -->
+    </div>
+  </div>
+  
+  <div id="deck-info-details">
+    <div>Tip: Click cards to add or remove them from your deck</div>
+    <div>Balance your deck with different card types for maximum effectiveness</div>
+  </div>
+  
+  <div id="deck-builder-footer">
+    <button class="menu-button" id="back-button">BACK TO MENU</button>
+    <button class="menu-button" id="save-deck-button">SAVE DECK</button>
+  </div>
+</div>
   <!-- Tutorial Modal -->
   <div id="tutorial-modal" class="overlay">
     <h2 id="tutorial-title">HOW TO PLAY</h2>
