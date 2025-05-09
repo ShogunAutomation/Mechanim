@@ -1,5 +1,5 @@
 import * as gameState from './gameState.js';
-import { Mech, Turret, EMPEffect, ShieldGenerator, Particle } from './gameObjects.js';
+import { Mech, Turret, EMPEffect, ShieldGenerator, Particle, MechFactory } from './gameObjects.js';
 
 // Card definitions and state
 let allCards = [];
@@ -21,7 +21,8 @@ export function initCards() {
       icon: "🤖",
       play: () => {
         const h = gameState.get('height');
-        const mech = new Mech(150, h - 200, "basic", "player");
+        // Use MechFactory instead of direct Mech instantiation
+        const mech = MechFactory.createMech(150, h - 200, "basic", "player");
         gameState.addGameObject(mech);
         gameState.set('playerMechs', gameState.get('playerMechs') + 1);
       }
@@ -35,7 +36,8 @@ export function initCards() {
       icon: "🛡️",
       play: () => {
         const h = gameState.get('height');
-        const mech = new Mech(150, h - 200, "tank", "player");
+        // Use MechFactory instead of direct Mech instantiation
+        const mech = MechFactory.createMech(150, h - 200, "tank", "player");
         gameState.addGameObject(mech);
         gameState.set('playerMechs', gameState.get('playerMechs') + 1);
       }
@@ -91,7 +93,8 @@ export function initCards() {
       icon: "🎯",
       play: () => {
         const h = gameState.get('height');
-        const mech = new Mech(150, h - 200, "sniper", "player");
+        // Use MechFactory instead of direct Mech instantiation
+        const mech = MechFactory.createMech(150, h - 200, "sniper", "player");
         gameState.addGameObject(mech);
         gameState.set('playerMechs', gameState.get('playerMechs') + 1);
       }

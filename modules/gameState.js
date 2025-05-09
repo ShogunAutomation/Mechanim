@@ -162,8 +162,27 @@ export function updateEnergy(deltaTime) {
 }
 
 export function updateCooldowns(deltaTime) {
-  if (state.spawnCooldown > 0) state.spawnCooldown -= deltaTime;
-  if (state.enemySpawnCooldown > 0) state.enemySpawnCooldown -= deltaTime;
+  if (state.spawnCooldown > 0) {
+    state.spawnCooldown -= deltaTime;
+  }
+  
+  if (state.enemySpawnCooldown > 0) {
+    state.enemySpawnCooldown -= deltaTime;
+  } else if (state.gameRunning) {
+    // Reset enemy spawn cooldown when it reaches zero
+    state.enemySpawnCooldown = CONFIG.SPAWN_CD * 1.5; // Enemy spawns slightly slower
+    
+    // Find enemy headquarters for spawning
+    const enemyHQ = state.gameObjects.find(obj => 
+      obj.type === "hq" && obj.faction === "enemy" && !obj.remove
+    );
+    
+    if (enemyHQ) {
+      // Enemy headquarters will automatically spawn units through its update method
+      // No need to directly spawn units here as the HQ object handles it
+      console.log("Enemy HQ ready to spawn units");
+    }
+  }
 }
 
 export function resetGameState() {

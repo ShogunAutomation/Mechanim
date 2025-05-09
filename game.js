@@ -1,5 +1,5 @@
 import { initCards, loadDeck, playerDeck, playerHand, aiHand, allCards, drawCard, playCard, toggleDeck, saveDeck } from './modules/cards.js';
-import { GameObject, Headquarters, Mech, Obelisk, Particle } from './modules/gameObjects.js';
+import { EMPEffect, ShieldGenerator, Headquarters, Turret, Obelisk, Particle, MechFactory } from './modules/gameObjects.js';
 import { setupUI, updateUI, showTutorial, closeTutorial, openDeckBuilder, closeDeckBuilder } from './modules/ui.js';
 import * as gameState from './modules/gameState.js';
 import { debugCardClicks } from './modules/utils.js';
@@ -160,7 +160,7 @@ function update(dt) {
     drawCard("player");
     drawCard("enemy");
     gameState.set('drawTimer', 0);
-    aiPlay();
+    aiPlay(); // Make sure AI play is called here
   }
 
   // Tag units for visual effects
@@ -196,18 +196,131 @@ function render() {
 }
 
 function aiPlay() {
+  // Get the current enemy energy from gameState
+  const enemyEnergy = gameState.get('enemyEnergy');
+  const width = gameState.get('width');
+  const height = gameState.get('height');
+  
   for (let i = 0; i < aiHand.length; i++) {
-    const idx = aiHand[i],
-      c = allCards[idx];
-    if (ee >= c.cost) {
-      ee -= c.cost;
+    const idx = aiHand[i];
+    const card = allCards[idx];
+    
+    if (enemyEnergy >= card.cost) {
+      // Deduct enemy energy
+      gameState.set('enemyEnergy', enemyEnergy - card.cost);
+      
+      // Remove card from AI hand
       aiHand.splice(i, 1);
-      if (c.type === "unit") {
-        const m = new Mech(w - 150, 200, c.unit, "enemy");
-        gameObjects.push(m);
-        em++;
+      
+      // Play the card based on its type
+      if (card.type === "unit") {
+        // Use MechFactory to create the enemy unit
+        const mech = MechFactory.createMech(
+          width - 150, 
+          Math.random() * (height - 300) + 150, // Random y position
+          card.unit, 
+          "enemy"
+        );
+        gameState.addGameObject(mech);
+        gameState.set('enemyMechs', gameState.get('enemyMechs') + 1);
+        console.log(`AI played unit: ${card.name}`);
+      } 
+      else if (card.type === "structure") {
+        // Handle different structure types
+        if (card.name === "Turret") {
+          // Place enemy turret
+          gameState.addGameObject(new Turret(
+            width - 200, 
+            Math.random() * (height - 300) + 150,  // Random y position
+            "enemy"
+          ));
+          console.log(`AI placed turret`);
+        }
+        else if (card.name === "Shield Generator") {
+          // Place enemy shield generator
+          gameState.addGameObject(new ShieldGenerator(
+            width - 200,
+            Math.random() * (height - 300) + 150, // Random y position
+            "enemy"
+          ));
+          console.log(`AI placed shield generator`);
+        }
       }
-      break;
+      else if (card.type === "spell") {
+        // Handle different spell types
+        if (card.name === "Heal Spell") {
+          // Heal the most damaged enemy unit
+          const enemies = gameState.getGameObjects().filter(
+            (o) => o.faction === "enemy" && o.type !== "hq" && o.health < o.maxHealth
+          );
+          
+          if (enemies.length > 0) {
+            // Sort by health percentage (lowest first)
+            enemies.sort((a, b) => (a.health/a.maxHealth) - (b.health/b.maxHealth));
+            const target = enemies[0];
+            target.health = Math.min(target.health + 30, target.maxHealth);
+            
+            // Add healing visual effect
+            gameState.addParticle(
+              new Particle(
+                target.x + target.w/2, 
+                target.y + target.h/2,
+                target.x + target.w/2, 
+                target.y - 20,
+                "#ff6060", // Enemy healing color
+                1.0
+              )
+            );
+            console.log(`AI used heal spell on ${target.type}`);
+          }
+        }
+        else if (card.name === "EMP Blast") {
+          // AI uses EMP near player units
+          const playerUnits = gameState.getGameObjects().filter(
+            (o) => o.faction === "player" && o.type === "unit"
+          );
+          
+          if (playerUnits.length > 0) {
+            // Find center of player units concentration
+            let centerX = 0, centerY = 0;
+            playerUnits.forEach(unit => {
+              centerX += unit.x + unit.w/2;
+              centerY += unit.y + unit.h/2;
+            });
+            centerX /= playerUnits.length;
+            centerY /= playerUnits.length;
+            
+            // Create EMP effect and apply stun
+            const empRadius = 150;
+            gameState.addParticle(new EMPEffect(centerX, centerY, empRadius));
+            
+            // Apply stun to players in range
+            playerUnits.forEach(unit => {
+              if (Math.hypot(unit.x + unit.w/2 - centerX, unit.y + unit.h/2 - centerY) <= empRadius) {
+                unit.stunned = true;
+                unit.stunnedTime = 3; // Stun for 3 seconds
+                
+                // Add visual stun effect
+                const el = document.createElement("div");
+                el.textContent = "⚡";
+                el.style.position = "absolute";
+                el.style.left = `${unit.x + unit.w/2}px`;
+                el.style.top = `${unit.y - 20}px`;
+                el.style.color = "#ffff00";
+                el.style.fontSize = "20px";
+                el.style.zIndex = "10";
+                el.style.pointerEvents = "none";
+                el.style.animation = "float-up 3s forwards";
+                document.getElementById("battlefield").appendChild(el);
+                setTimeout(() => el.remove(), 3000);
+              }
+            });
+            console.log(`AI used EMP Blast on player units`);
+          }
+        }
+      }
+      
+      break; // Only play one card per turn
     }
   }
 }
