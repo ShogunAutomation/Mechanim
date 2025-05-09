@@ -49,10 +49,51 @@ body {
   clip-path: polygon(50% 0, 100% 38%, 82% 100%, 18% 100%, 0 38%);
   box-shadow: 0 0 10px #ff6060;
 }
+
+/* Add command limit warning styles */
+.command-limit-warning .resource-value {
+  color: #ff6060;
+  animation: pulse-warning 1s infinite;
+}
+
+.command-limit-reached .resource-value {
+  color: #ff6060;
+  font-weight: bold;
+}
+
+/* Disallow visual style for cards that can't be played */
+.card.command-limited {
+  opacity: 0.6;
+  cursor: not-allowed !important;
+  box-shadow: 0 0 8px rgba(255, 0, 0, 0.7);
+}
+
+.card-error-message {
+  animation: float-fade 2s forwards;
+  pointer-events: none;
+}
+
+@keyframes pulse-warning {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes float-fade {
+  0% { 
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+  100% { 
+    opacity: 0;
+    transform: translate(-50%, -80%);
+  }
+}
+
 .resource-value {
   font-weight: bold;
   font-size: 16px;
 }
+
 #main-area {
   display: flex;
   flex: 1;

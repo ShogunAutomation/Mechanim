@@ -202,10 +202,17 @@ function aiPlay() {
   const enemyEnergy = gameState.get('enemyEnergy');
   const width = gameState.get('width');
   const height = gameState.get('height');
+  const enemyMechs = gameState.get('enemyMechs');
+  const enemyMaxCommand = gameState.getMaxCommand("enemy");
   
   for (let i = 0; i < aiHand.length; i++) {
     const idx = aiHand[i];
     const card = allCards[idx];
+    
+    // Skip unit cards if at command limit
+    if (card.type === "unit" && enemyMechs >= enemyMaxCommand) {
+      continue;
+    }
     
     if (enemyEnergy >= card.cost) {
       // Deduct enemy energy

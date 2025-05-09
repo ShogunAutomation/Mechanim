@@ -299,7 +299,19 @@ export function playCard(handIdx) {
   const playerEnergy = gameState.get('playerEnergy');
   if (playerEnergy < card.cost) {
     console.log(`Not enough energy to play card: ${card.name} (Cost: ${card.cost}, Energy: ${playerEnergy})`);
+    showCardError("Not enough energy!");
     return;
+  }
+
+  // Check command points for unit cards
+  if (card.type === "unit") {
+    const playerMechs = gameState.get('playerMechs');
+    const maxCommand = gameState.getMaxCommand("player");
+    if (playerMechs >= maxCommand) {
+      console.log(`Command limit reached: Cannot deploy more units (${playerMechs}/${maxCommand})`);
+      showCardError("Command limit reached!");
+      return;
+    }
   }
 
   // Deduct energy and remove the card from the hand
@@ -309,4 +321,27 @@ export function playCard(handIdx) {
   // Execute the card's play behavior
   console.log(`Playing card: ${card.name}`);
   card.play();
+}
+
+// Add a function to show error messages when trying to play cards
+function showCardError(message) {
+  const errorMsg = document.createElement("div");
+  errorMsg.className = "card-error-message";
+  errorMsg.textContent = message;
+  errorMsg.style.position = "absolute";
+  errorMsg.style.top = "50%";
+  errorMsg.style.left = "50%";
+  errorMsg.style.transform = "translate(-50%, -50%)";
+  errorMsg.style.color = "#ff6060";
+  errorMsg.style.fontSize = "24px";
+  errorMsg.style.fontWeight = "bold";
+  errorMsg.style.textShadow = "0 0 10px #000";
+  errorMsg.style.zIndex = "100";
+  
+  document.getElementById("battlefield").appendChild(errorMsg);
+  
+  // Remove after animation
+  setTimeout(() => {
+    errorMsg.remove();
+  }, 2000);
 }

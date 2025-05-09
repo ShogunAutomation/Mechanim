@@ -89,13 +89,26 @@ export function updateUI() {
   
   // Update command value to include obelisk bonuses
   const maxCommand = gameState.getMaxCommand("player");
-  document.getElementById("command-value").textContent = `${
-    gameState.get('playerMechs')
-  }/${maxCommand}`;
+  const currentMechs = gameState.get('playerMechs');
+  document.getElementById("command-value").textContent = `${currentMechs}/${maxCommand}`;
+  
+  // Update visual feedback for command limit
+  const cmdElement = document.querySelector(".resource:nth-child(2)");
+  if (cmdElement) {
+    if (currentMechs >= maxCommand) {
+      cmdElement.classList.add("command-limit-reached");
+      cmdElement.classList.remove("command-limit-warning");
+    } else if (currentMechs >= maxCommand - 1) { // Warning when only 1 command point left
+      cmdElement.classList.add("command-limit-warning");
+      cmdElement.classList.remove("command-limit-reached");
+    } else {
+      cmdElement.classList.remove("command-limit-warning", "command-limit-reached");
+    }
+  }
   
   document.getElementById("deck-count").textContent = `${playerDeck.length}`;
 
-  // Render hand for battle
+  // Render hand for battle with command point awareness
   const handEl = document.getElementById("card-hand");
   handEl.innerHTML = "";
   
@@ -104,6 +117,12 @@ export function updateUI() {
     const d = document.createElement("div");
     d.className = "card";
     d.dataset.handIdx = i;
+    
+    // Add command limit visual indicator
+    const atCommandLimit = c.type === "unit" && gameState.get('playerMechs') >= gameState.getMaxCommand("player");
+    if (atCommandLimit) {
+      d.classList.add("command-limited");
+    }
     
     d.innerHTML = `
       <span class="card-cost">${c.cost}</span>
