@@ -12,6 +12,7 @@
   background-color: #f9f9f9;
   text-align: center;
   transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
 }
 
 .collection-card:hover {
@@ -25,4 +26,27 @@
   margin-bottom: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
+}
+
+.card-remove-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 20px;
+  height: 20px;
+  background: #ff4040;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+#current-deck .collection-card:hover .card-remove-button {
+  opacity: 1;
 }

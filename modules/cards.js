@@ -184,10 +184,30 @@ function renderCardCollection(cards) {
 }
 
 export function toggleDeck(idx, el) {
-  if (playerDeck.length < 20) {
-    playerDeck.push(idx); // Allow duplicates by simply adding the index
-    el.classList.add("selected");
+  // Check if the card is clicked from the current deck side
+  if (el.closest("#current-deck")) {
+    // Remove one copy of this card from the deck
+    const cardIndex = playerDeck.indexOf(parseInt(idx));
+    if (cardIndex !== -1) {
+      playerDeck.splice(cardIndex, 1);
+      // Remove "selected" class if card is no longer in the deck
+      const inDeckCount = playerDeck.filter(id => id === parseInt(idx)).length;
+      if (inDeckCount === 0) {
+        document.querySelectorAll(`.collection-card[data-card-idx="${idx}"]`).forEach(card => {
+          if (!card.closest("#current-deck")) {
+            card.classList.remove("selected");
+          }
+        });
+      }
+    }
+  } else {
+    // Adding card to deck from collection
+    if (playerDeck.length < 20) {
+      playerDeck.push(idx);
+      el.classList.add("selected");
+    }
   }
+  
   document.getElementById("deck-card-count").textContent = playerDeck.length;
   updateCurrentDeckDisplay();
 }
@@ -243,6 +263,7 @@ export function updateCurrentDeckDisplay() {
       <div class="card-icon">${card.icon || ''}</div>
       <div class="card-title">${card.name} x${count}</div>
       <div class="card-desc">${card.desc}</div>
+      <div class="card-remove-button">-</div>
     `;
     currentDeckEl.appendChild(el);
   });

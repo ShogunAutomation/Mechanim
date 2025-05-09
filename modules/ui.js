@@ -54,6 +54,8 @@ export function handleDeckBuilderClick(cardEl) {
     console.error("Invalid card index in deck builder.");
     return;
   }
+  
+  console.log("Card clicked in deck builder:", idx, "From container:", cardEl.closest("#current-deck") ? "current-deck" : "collection");
   window.toggleDeck(idx, cardEl);
 }
 
