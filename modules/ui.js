@@ -1,23 +1,26 @@
 import * as gameState from './gameState.js';
 import { allCards, playerDeck, playerHand, playCard, initCards, loadDeck, saveDeck } from './cards.js';
+import { openDeckBuilder, closeDeckBuilder, handleDeckBuilderClick } from './deckBuilderUI.js';
+import { showTutorial, closeTutorial } from './tutorialUI.js';
+import { renderHand } from './handUI.js';
 
 export function setupUI() {
   console.log("Setting up UI");
   
   // Set up navigation buttons with direct function references
   document.getElementById("start-button").onclick = window.startGame;
-  document.getElementById("deck-builder-button").onclick = openDeckBuilder;
+  document.getElementById("deck-builder-button").onclick = () => openDeckBuilder(eMenu, eDeckB);
   document.getElementById("restart-button").onclick = window.restartGame;
-  document.getElementById("back-button").onclick = closeDeckBuilder;
+  document.getElementById("back-button").onclick = () => closeDeckBuilder(gameState);
   document.getElementById("save-deck-button").onclick = saveDeck;
-  document.getElementById("tutorial-close").onclick = closeTutorial;
+  document.getElementById("tutorial-close").onclick = () => closeTutorial(eTutorial);
   
   // Set up card collection handlers
   const cardCollection = document.getElementById("card-collection");
   if (cardCollection) {
     cardCollection.addEventListener("click", (evt) => {
       const cardEl = evt.target.closest(".collection-card");
-      if (cardEl) handleDeckBuilderClick(cardEl);
+      if (cardEl) handleDeckBuilderClick(cardEl, window.toggleDeck);
     });
   }
 
@@ -25,7 +28,7 @@ export function setupUI() {
   if (currentDeck) {
     currentDeck.addEventListener("click", (evt) => {
       const cardEl = evt.target.closest(".collection-card");
-      if (cardEl) handleDeckBuilderClick(cardEl);
+      if (cardEl) handleDeckBuilderClick(cardEl, window.toggleDeck);
     });
   }
 
@@ -46,39 +49,6 @@ export function setupUI() {
     });
   }
   console.log("Click listeners attached for deck builder and battle contexts.");
-}
-
-export function handleDeckBuilderClick(cardEl) {
-  const idx = parseInt(cardEl.dataset.cardIdx);
-  if (isNaN(idx)) {
-    console.error("Invalid card index in deck builder.");
-    return;
-  }
-  
-  console.log("Card clicked in deck builder:", idx, "From container:", cardEl.closest("#current-deck") ? "current-deck" : "collection");
-  window.toggleDeck(idx, cardEl);
-}
-
-export function showTutorial() {
-  eTutorial.style.display = "flex";
-}
-
-export function closeTutorial() {
-  eTutorial.style.display = "none";
-}
-
-export function openDeckBuilder() {
-  eMenu.style.display = "none";
-  eDeckB.style.display = "flex";
-
-  // Make sure cards are properly initialized
-  initCards();
-  loadDeck();
-}
-
-export function closeDeckBuilder() {
-  console.log("close deck builder click function called");
-  gameState.showScreen('menu');
 }
 
 export function updateUI() {
@@ -112,34 +82,6 @@ export function updateUI() {
   const handEl = document.getElementById("card-hand");
   handEl.innerHTML = "";
   
-  playerHand.forEach((cardIdx, i) => {
-    const c = allCards[cardIdx];
-    const d = document.createElement("div");
-    d.className = "card";
-    d.dataset.handIdx = i;
-    
-    // Add command limit visual indicator
-    const atCommandLimit = c.type === "unit" && gameState.get('playerMechs') >= gameState.getMaxCommand("player");
-    if (atCommandLimit) {
-      d.classList.add("command-limited");
-    }
-    
-    d.innerHTML = `
-      <span class="card-cost">${c.cost}</span>
-      <span class="card-title">${c.name}</span>
-    `;
-    
-    d.onmousedown = function() {
-      console.log(`CARD MOUSEDOWN: ${i} - ${c.name}`);
-      // Use gameState.get('gameRunning') instead of window.gameRunning
-      if (gameState.get('gameRunning')) {
-        console.log("Game is running, playing card...");
-        playCard(i);
-      } else {
-        console.log("Game not running, can't play card");
-      }
-    };
-    
-    handEl.appendChild(d);
-  });
+  renderHand(handEl, playerHand, allCards, playCard, gameState);
 }
+

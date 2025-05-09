@@ -1,6 +1,8 @@
 import { initCards, loadDeck, playerDeck, playerHand, aiHand, allCards, drawCard, playCard, toggleDeck, saveDeck } from './modules/cards.js';
 import { EMPEffect, ShieldGenerator, Headquarters, Turret, Obelisk, Particle, MechFactory } from './modules/gameObjects.js';
-import { setupUI, updateUI, showTutorial, closeTutorial, openDeckBuilder, closeDeckBuilder } from './modules/ui.js';
+import { setupUI, updateUI } from './modules/ui.js';
+import { showTutorial, closeTutorial } from './modules/tutorialUI.js';
+import { openDeckBuilder, closeDeckBuilder } from './modules/deckBuilderUI.js';
 import * as gameState from './modules/gameState.js';
 import { debugCardClicks } from './modules/utils.js';
 
